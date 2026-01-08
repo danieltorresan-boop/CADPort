@@ -17,7 +17,7 @@ export default function RootLayout({
     <html lang="en">
       <body className="antialiased">
         {children}
-        <Script src="/libdxfrw.js" strategy="beforeInteractive" />
+        <Script src="/libdxfrw.js" strategy="afterInteractive" />
       </body>
     </html>
   );

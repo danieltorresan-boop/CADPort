@@ -14,19 +14,25 @@ let libdxfrwModule: any = null;
  * This should be called once when the app loads
  */
 export async function initializeConverter(): Promise<boolean> {
+  // Only run on client side
+  if (typeof window === 'undefined') {
+    console.warn('initializeConverter called on server side, skipping');
+    return false;
+  }
+
   if (libdxfrwModule) {
     return true; // Already initialized
   }
 
   try {
     // @ts-ignore - createModule is loaded from libdxfrw.js
-    if (typeof createModule === 'undefined') {
+    if (typeof window.createModule === 'undefined') {
       console.error('createModule is not defined. Make sure libdxfrw.js is loaded.');
       return false;
     }
 
     // @ts-ignore
-    libdxfrwModule = await createModule();
+    libdxfrwModule = await window.createModule();
     console.log('✅ LibreDWG WASM module initialized successfully');
     return true;
   } catch (error) {
