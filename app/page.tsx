@@ -52,6 +52,8 @@ export default function Home() {
     setProgress(0);
     setErrorMessage('');
 
+    let hasError = false;
+
     try {
       // Check if converter is initialized
       if (!isInitialized) {
@@ -104,15 +106,20 @@ export default function Home() {
       setStatus('success');
 
     } catch (error) {
+      hasError = true;
       setStatus('error');
       setErrorMessage(error instanceof Error ? error.message : 'Conversion failed');
     } finally {
       setIsConverting(false);
-      // Reset after 3 seconds
-      setTimeout(() => {
-        setStatus('idle');
-        setProgress(0);
-      }, 3000);
+
+      // Only auto-reset for success state - keep errors visible until next file drop
+      if (!hasError) {
+        setTimeout(() => {
+          setStatus('idle');
+          setProgress(0);
+        }, 3000);
+      }
+      // Error state persists until user drops another file
     }
   }, [isInitialized]);
 
