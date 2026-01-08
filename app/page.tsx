@@ -206,26 +206,40 @@ EOF
         </div>
 
         {/* Archad Promotion */}
-        <div className="mt-8 bg-gradient-to-r from-blue-500/10 to-purple-500/10 backdrop-blur-sm border border-blue-400/30 rounded-xl p-8 hover:border-blue-400/50 transition-all">
+        <a
+          href="https://archad.pro"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="mt-8 block bg-black border border-zinc-800 rounded-xl p-8 hover:border-zinc-700 transition-all group"
+        >
           <div className="flex flex-col md:flex-row items-center justify-between gap-6">
-            <div className="flex-1 text-center md:text-left">
-              <p className="text-2xl font-semibold text-white mb-2">
-                Have you tried the new Archad.pro design tool?
-              </p>
-              <p className="text-blue-200/70 text-sm">
-                AI-powered CAD application with comprehensive drawing and design capabilities
-              </p>
+            <div className="flex items-center gap-4 flex-1">
+              <div className="w-16 h-16 flex-shrink-0">
+                <img
+                  src="/archad-logo.png"
+                  alt="Archad Logo"
+                  className="w-full h-full object-contain"
+                />
+              </div>
+              <div className="text-center md:text-left">
+                <p className="text-xl font-semibold text-white mb-1 group-hover:text-blue-400 transition-colors">
+                  Have you tried the new Archad.pro design tool?
+                </p>
+                <p className="text-zinc-400 text-sm">
+                  AI-powered CAD application with comprehensive drawing and design capabilities
+                </p>
+              </div>
             </div>
-            <a
-              href="https://archad.pro"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="px-8 py-3 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 rounded-lg text-white font-semibold transition-all shadow-lg shadow-blue-500/30 hover:shadow-blue-500/50 hover:scale-105 whitespace-nowrap"
-            >
-              Try Archad →
-            </a>
+            <div className="flex-shrink-0">
+              <div className="px-6 py-2.5 bg-zinc-900 group-hover:bg-zinc-800 border border-zinc-700 rounded-lg text-white font-medium transition-all flex items-center gap-2">
+                Try Archad
+                <svg className="w-4 h-4 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
+              </div>
+            </div>
           </div>
-        </div>
+        </a>
       </main>
 
       {/* Footer */}
