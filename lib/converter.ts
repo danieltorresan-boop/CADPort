@@ -76,12 +76,36 @@ export async function convertDWGtoDXF(
     console.log('📖 Attempting to read DWG file...');
     const dwgReader = new libdxfrwModule.DRW_DwgR(dwgFileContent);
 
-    // Optional: Enable debug mode to see more details
-    // dwgReader.setDebug(libdxfrwModule.DRW_Dbg_Level.Debug);
+    // Enable debug mode to see what's happening
+    try {
+      if (libdxfrwModule.DRW_Dbg_Level && libdxfrwModule.DRW_Dbg_Level.Debug) {
+        dwgReader.setDebug(libdxfrwModule.DRW_Dbg_Level.Debug);
+        console.log('🐛 Debug mode enabled');
+      }
+    } catch (e) {
+      console.log('ℹ️ Debug mode not available');
+    }
 
-    const readResult = dwgReader.read(fileHandler, false);
+    let readResult;
+    try {
+      readResult = dwgReader.read(fileHandler, false);
+      console.log('Read result:', readResult);
+    } catch (readError) {
+      console.error('❌ Error during DWG read operation:', readError);
+      dwgReader.delete();
+      database.delete();
+      fileHandler.delete();
 
-    console.log('Read result:', readResult);
+      // Provide more specific error message
+      const errorMsg = typeof readError === 'number'
+        ? `DWG file version not supported (error code: ${readError}). Supported versions: AutoCAD R14-2020. Your file may be from AutoCAD 2021 or newer.`
+        : `Failed to read DWG file: ${readError}`;
+
+      return {
+        success: false,
+        error: errorMsg
+      };
+    }
 
     // Clean up DWG reader
     dwgReader.delete();
