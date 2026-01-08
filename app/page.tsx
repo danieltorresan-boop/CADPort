@@ -3,7 +3,6 @@
 import { useState, useCallback, useEffect } from 'react';
 import FileUploader from '@/components/FileUploader';
 import ConversionStatus from '@/components/ConversionStatus';
-import { convertDWGtoDXF, initializeConverter } from '@/lib/converter';
 
 export default function Home() {
   const [isConverting, setIsConverting] = useState(false);
@@ -23,7 +22,11 @@ export default function Home() {
         // Check if createModule is available
         if (typeof window !== 'undefined' && (window as any).createModule) {
           console.log('✅ libdxfrw.js loaded, initializing converter...');
+
+          // Dynamically import converter to avoid SSR issues
+          const { initializeConverter } = await import('@/lib/converter');
           const success = await initializeConverter();
+
           setIsInitialized(success);
           if (!success) {
             console.error('Failed to initialize DWG converter');
@@ -60,6 +63,9 @@ export default function Home() {
       // Read file as ArrayBuffer
       const arrayBuffer = await file.arrayBuffer();
       setProgress(20);
+
+      // Dynamically import converter to avoid SSR issues
+      const { convertDWGtoDXF } = await import('@/lib/converter');
 
       // Convert DWG to DXF using real LibreDWG WASM
       const result = await convertDWGtoDXF(arrayBuffer, file.name);

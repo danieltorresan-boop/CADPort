@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { convertDWGtoDXF, initializeConverter } from '@/lib/converter';
 
 /**
  * Hidden API page for Archad integration
@@ -22,6 +21,8 @@ export default function ConverterAPI() {
         if (typeof window !== 'undefined' && (window as any).createModule) {
           console.log('✅ libdxfrw.js loaded, initializing API...');
 
+          // Dynamically import converter to avoid SSR issues
+          const { initializeConverter } = await import('@/lib/converter');
           const success = await initializeConverter();
 
           if (success) {
@@ -96,6 +97,9 @@ export default function ConverterAPI() {
           const arrayBuffer = fileData instanceof ArrayBuffer
             ? fileData
             : new Uint8Array(fileData).buffer;
+
+          // Dynamically import converter to avoid SSR issues
+          const { convertDWGtoDXF } = await import('@/lib/converter');
 
           // Perform conversion
           const result = await convertDWGtoDXF(arrayBuffer, fileName);
