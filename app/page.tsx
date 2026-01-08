@@ -68,7 +68,13 @@ export default function Home() {
       const { convertDWGtoDXF } = await import('@/lib/converter');
 
       // Convert DWG to DXF using real LibreDWG WASM
-      const result = await convertDWGtoDXF(arrayBuffer, file.name);
+      // Add timeout to prevent hanging
+      const conversionPromise = convertDWGtoDXF(arrayBuffer, file.name);
+      const timeoutPromise = new Promise<never>((_, reject) => {
+        setTimeout(() => reject(new Error('Conversion timeout - file may be too large or complex')), 30000);
+      });
+
+      const result = await Promise.race([conversionPromise, timeoutPromise]);
 
       setProgress(90);
 
