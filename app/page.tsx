@@ -223,7 +223,7 @@ EOF
               </div>
               <div className="text-center md:text-left">
                 <p className="text-xl font-semibold text-white mb-1 group-hover:text-blue-400 transition-colors">
-                  Have you tried the new Archad.pro design tool?
+                  Have you tried the new Archad design tool?
                 </p>
                 <p className="text-zinc-400 text-sm">
                   Design anywhere with AI-enhanced drawings and tools
