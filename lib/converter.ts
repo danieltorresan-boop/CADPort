@@ -47,6 +47,26 @@ export async function initializeConverter(): Promise<boolean> {
  * @param fileName - Original file name (for error messages)
  * @returns ConversionResult with DXF content or error
  */
+/**
+ * Check DWG version from file header
+ * DWG files start with version string like "AC1024" (2010), "AC1027" (2013), "AC1032" (2018), etc.
+ */
+function checkDWGVersion(arrayBuffer: ArrayBuffer): { supported: boolean; version: string } {
+  const view = new Uint8Array(arrayBuffer);
+  const versionString = String.fromCharCode(...view.slice(0, 6));
+
+  // AC1014 = R14, AC1015 = 2000, AC1018 = 2004, AC1021 = 2007,
+  // AC1024 = 2010, AC1027 = 2013, AC1032 = 2018
+  // AC1033+ = 2019+ (NOT SUPPORTED)
+  const versionCode = versionString.substring(2, 6);
+  const versionNum = parseInt(versionCode, 10);
+
+  // LibreDWG supports up to AC1032 (AutoCAD 2018)
+  const supported = versionNum <= 1032;
+
+  return { supported, version: versionString };
+}
+
 export async function convertDWGtoDXF(
   dwgFileContent: ArrayBuffer,
   fileName: string
@@ -64,6 +84,17 @@ export async function convertDWGtoDXF(
 
   try {
     console.log(`📥 Converting ${fileName} (${dwgFileContent.byteLength} bytes)`);
+
+    // Check DWG version BEFORE attempting conversion to avoid browser freeze
+    const versionCheck = checkDWGVersion(dwgFileContent);
+    console.log(`📋 DWG Version: ${versionCheck.version} (Supported: ${versionCheck.supported})`);
+
+    if (!versionCheck.supported) {
+      return {
+        success: false,
+        error: `DWG file version ${versionCheck.version} not supported. Supported versions: AutoCAD R14-2018 (AC1014-AC1032). Your file appears to be from AutoCAD 2019 or newer. Please re-save as "AutoCAD 2018 DWG" format.`
+      };
+    }
 
     // Create database and file handler
     const database = new libdxfrwModule.DRW_Database();
