@@ -120,14 +120,6 @@ EOF
                 <p className="text-sm text-blue-300">DWG ⇄ DXF Converter</p>
               </div>
             </div>
-            <a
-              href="https://archad.pro"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="px-4 py-2 bg-white/10 hover:bg-white/20 border border-white/20 rounded-lg text-white text-sm font-medium transition-colors"
-            >
-              Powered by Archad
-            </a>
           </div>
         </div>
       </header>
@@ -222,9 +214,6 @@ EOF
               © 2026 CADPort • Licensed under GPL-3.0
             </div>
             <div className="flex gap-6">
-              <a href="https://github.com/danieltorresan-boop/CADPort" className="text-blue-300 hover:text-white text-sm transition-colors">
-                GitHub
-              </a>
               <a href="https://archad.pro" className="text-blue-300 hover:text-white text-sm transition-colors">
                 Archad CAD App
               </a>
