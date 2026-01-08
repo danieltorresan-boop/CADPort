@@ -1,14 +1,26 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import FileUploader from '@/components/FileUploader';
 import ConversionStatus from '@/components/ConversionStatus';
+import { convertDWGtoDXF, initializeConverter } from '@/lib/converter';
 
 export default function Home() {
   const [isConverting, setIsConverting] = useState(false);
   const [progress, setProgress] = useState(0);
   const [status, setStatus] = useState<'idle' | 'converting' | 'success' | 'error'>('idle');
   const [errorMessage, setErrorMessage] = useState<string>('');
+  const [isInitialized, setIsInitialized] = useState(false);
+
+  // Initialize the converter when component mounts
+  useEffect(() => {
+    initializeConverter().then(success => {
+      setIsInitialized(success);
+      if (!success) {
+        console.error('Failed to initialize DWG converter');
+      }
+    });
+  }, []);
 
   const handleFileSelect = useCallback(async (file: File) => {
     setIsConverting(true);
@@ -17,24 +29,31 @@ export default function Home() {
     setErrorMessage('');
 
     try {
-      // TODO: Integrate LibreDWG WASM conversion
-      // For now, simulate conversion process
-      setProgress(25);
-      await new Promise(resolve => setTimeout(resolve, 500));
+      // Check if converter is initialized
+      if (!isInitialized) {
+        throw new Error('Converter not initialized. Please refresh the page.');
+      }
 
-      setProgress(50);
-      await new Promise(resolve => setTimeout(resolve, 500));
+      setProgress(10);
 
-      setProgress(75);
-      await new Promise(resolve => setTimeout(resolve, 500));
+      // Read file as ArrayBuffer
+      const arrayBuffer = await file.arrayBuffer();
+      setProgress(20);
 
-      // Simulate successful conversion
+      // Convert DWG to DXF using real LibreDWG WASM
+      const result = await convertDWGtoDXF(arrayBuffer, file.name);
+
+      setProgress(90);
+
+      if (!result.success || !result.dxfContent) {
+        throw new Error(result.error || 'Conversion failed');
+      }
+
+      // Download the converted DXF file
+      downloadDXF(result.dxfContent, file.name);
+
       setProgress(100);
       setStatus('success');
-
-      // Create a simple DXF file (placeholder until WASM is integrated)
-      const dxfContent = generatePlaceholderDXF(file.name);
-      downloadDXF(dxfContent, file.name);
 
     } catch (error) {
       setStatus('error');
@@ -47,48 +66,7 @@ export default function Home() {
         setProgress(0);
       }, 3000);
     }
-  }, []);
-
-  const generatePlaceholderDXF = (fileName: string): string => {
-    // Simple DXF header - this will be replaced with actual LibreDWG conversion
-    return `0
-SECTION
-2
-HEADER
-9
-$ACADVER
-1
-AC1015
-9
-$DWGCODEPAGE
-3
-ANSI_1252
-0
-ENDSEC
-0
-SECTION
-2
-ENTITIES
-0
-TEXT
-8
-0
-10
-0.0
-20
-0.0
-30
-0.0
-40
-2.5
-1
-Converted from ${fileName}
-0
-ENDSEC
-0
-EOF
-`;
-  };
+  }, [isInitialized]);
 
   const downloadDXF = (content: string, originalFileName: string) => {
     const dxfFileName = originalFileName.replace(/\.[^/.]+$/, '') + '.dxf';
