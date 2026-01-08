@@ -72,22 +72,30 @@ export async function convertDWGtoDXF(
 
     console.log('📦 Created database and file handler');
 
-    // Import DWG file
-    console.log('📖 Attempting to import DWG file...');
-    const importSuccess = fileHandler.fileImport(dwgFileContent, database, false, false);
+    // Import DWG file using DRW_DwgR class (correct API for DWG files)
+    console.log('📖 Attempting to read DWG file...');
+    const dwgReader = new libdxfrwModule.DRW_DwgR(dwgFileContent);
 
-    console.log('Import result:', importSuccess);
+    // Optional: Enable debug mode to see more details
+    // dwgReader.setDebug(libdxfrwModule.DRW_Dbg_Level.Debug);
 
-    if (!importSuccess) {
+    const readResult = dwgReader.read(fileHandler, false);
+
+    console.log('Read result:', readResult);
+
+    // Clean up DWG reader
+    dwgReader.delete();
+
+    if (!readResult) {
       database.delete();
       fileHandler.delete();
       return {
         success: false,
-        error: `Failed to parse ${fileName}. The file may be corrupted or in an unsupported DWG version (supported: R14-2020).`
+        error: `Failed to read ${fileName}. The file may be corrupted or in an unsupported DWG version (supported: R14-2020).`
       };
     }
 
-    console.log('✅ DWG file imported successfully');
+    console.log('✅ DWG file read successfully');
 
     // Export as DXF (AC1021 = AutoCAD 2007 DXF format - widely compatible)
     console.log('📝 Exporting to DXF format...');
