@@ -135,7 +135,7 @@ export async function convertDWGtoDXF(
       fileHandler.delete();
       return {
         success: false,
-        error: `Failed to read ${fileName}. The file may be corrupted or in an unsupported DWG version (supported: R14-2020).`
+        error: `Failed to read ${fileName}. The file may be corrupted or in an unsupported DWG version (supported: R14-2018).`
       };
     }
 
