@@ -88,17 +88,37 @@ export async function convertDWGtoDXF(
 
     let readResult;
     try {
+      console.log('⏳ Starting DWG read operation...');
+      console.time('DWG Read Duration');
+
       readResult = dwgReader.read(fileHandler, false);
-      console.log('Read result:', readResult);
+
+      console.timeEnd('DWG Read Duration');
+      console.log('✅ Read operation completed. Result:', readResult);
+
+      // Log database stats
+      try {
+        if (database.mBlock && database.mBlock.entities) {
+          console.log(`📊 Entities found: ${database.mBlock.entities.size()}`);
+        }
+        if (database.layers) {
+          console.log(`📊 Layers found: ${database.layers.size()}`);
+        }
+      } catch (e) {
+        console.log('ℹ️ Could not log database stats');
+      }
+
     } catch (readError) {
       console.error('❌ Error during DWG read operation:', readError);
+      console.timeEnd('DWG Read Duration');
+
       dwgReader.delete();
       database.delete();
       fileHandler.delete();
 
       // Provide more specific error message
       const errorMsg = typeof readError === 'number'
-        ? `DWG file version not supported (error code: ${readError}). Supported versions: AutoCAD R14-2020. Your file may be from AutoCAD 2021 or newer.`
+        ? `DWG file version not supported (error code: ${readError}). Supported versions: AutoCAD R14-2018. Your file may be from AutoCAD 2019 or newer.`
         : `Failed to read DWG file: ${readError}`;
 
       return {

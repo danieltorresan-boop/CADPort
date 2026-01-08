@@ -90,7 +90,10 @@ export default function FileUploader({ onFileSelect, isConverting }: FileUploade
         {/* Supported Formats */}
         <div className="mt-4 px-4 py-2 bg-white/5 rounded-lg border border-white/10">
           <p className="text-xs text-blue-300/70">
-            Supports: <span className="text-blue-300 font-medium">.dwg</span> files (AutoCAD 2000-2018)
+            Supports: <span className="text-blue-300 font-medium">.dwg</span> files
+          </p>
+          <p className="text-xs text-yellow-300/60 mt-1">
+            AutoCAD R14-2018 only
           </p>
         </div>
       </div>
