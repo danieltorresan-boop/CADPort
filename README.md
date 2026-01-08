@@ -1,10 +1,23 @@
-# CADPort - Free DWG to DXF Converter
+# ⚠️ ARCHIVED - CADPort - Free DWG to DXF Converter
+
+> **📌 This project has been archived as of January 8, 2026.**
+>
+> **Why?** LibreDWG only supports AutoCAD R14-2018. Most modern DWG files (2019+) are not supported.
+>
+> **Alternative:** Use [Archad](https://archad.pro) which now has built-in DWG import with support for all AutoCAD versions.
+>
+> See [ARCHIVED.md](ARCHIVED.md) for full details.
+
+---
 
 ![CADPort](https://img.shields.io/badge/License-GPL--3.0-blue.svg)
 ![Next.js](https://img.shields.io/badge/Next.js-15-black)
 ![TypeScript](https://img.shields.io/badge/TypeScript-5-blue)
+![Status](https://img.shields.io/badge/Status-Archived-red.svg)
 
 Convert DWG files to DXF format instantly in your browser. 100% free, secure, and private.
+
+**⚠️ Note:** Only supports AutoCAD R14-2018 files. Files from AutoCAD 2019+ are not supported.
 
 ## ✨ Features
 
