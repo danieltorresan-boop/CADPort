@@ -12,28 +12,55 @@ export default function ConverterAPI() {
   const [status, setStatus] = useState('Initializing converter...');
 
   useEffect(() => {
-    // Initialize the converter
-    initializeConverter().then(success => {
-      if (success) {
-        setIsReady(true);
-        setStatus('Ready to convert');
+    // Wait for libdxfrw.js to load, then initialize
+    const waitForScript = async () => {
+      let attempts = 0;
+      const maxAttempts = 20; // Wait up to 10 seconds
 
-        // Notify parent window that converter is ready
-        window.parent.postMessage({
-          type: 'CADPORT_READY',
-          source: 'cadport'
-        }, '*');
+      while (attempts < maxAttempts) {
+        // Check if createModule is available
+        if (typeof window !== 'undefined' && (window as any).createModule) {
+          console.log('✅ libdxfrw.js loaded, initializing API...');
 
-        console.log('✅ CADPort API ready for integration');
-      } else {
-        setStatus('Failed to initialize converter');
-        window.parent.postMessage({
-          type: 'CADPORT_ERROR',
-          error: 'Failed to initialize converter',
-          source: 'cadport'
-        }, '*');
+          const success = await initializeConverter();
+
+          if (success) {
+            setIsReady(true);
+            setStatus('Ready to convert');
+
+            // Notify parent window that converter is ready
+            window.parent.postMessage({
+              type: 'CADPORT_READY',
+              source: 'cadport'
+            }, '*');
+
+            console.log('✅ CADPort API ready for integration');
+          } else {
+            setStatus('Failed to initialize converter');
+            window.parent.postMessage({
+              type: 'CADPORT_ERROR',
+              error: 'Failed to initialize converter',
+              source: 'cadport'
+            }, '*');
+          }
+          return;
+        }
+
+        // Wait 500ms and try again
+        await new Promise(resolve => setTimeout(resolve, 500));
+        attempts++;
       }
-    });
+
+      // Timeout
+      setStatus('Failed to load converter');
+      window.parent.postMessage({
+        type: 'CADPORT_ERROR',
+        error: 'Timeout loading libdxfrw.js',
+        source: 'cadport'
+      }, '*');
+    };
+
+    waitForScript();
 
     // Listen for conversion requests from parent window (Archad)
     const handleMessage = async (event: MessageEvent) => {

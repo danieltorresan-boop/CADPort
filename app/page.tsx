@@ -14,12 +14,33 @@ export default function Home() {
 
   // Initialize the converter when component mounts
   useEffect(() => {
-    initializeConverter().then(success => {
-      setIsInitialized(success);
-      if (!success) {
-        console.error('Failed to initialize DWG converter');
+    // Wait for libdxfrw.js to load, then initialize
+    const waitForScript = async () => {
+      let attempts = 0;
+      const maxAttempts = 20; // Wait up to 10 seconds (20 * 500ms)
+
+      while (attempts < maxAttempts) {
+        // Check if createModule is available
+        if (typeof window !== 'undefined' && (window as any).createModule) {
+          console.log('✅ libdxfrw.js loaded, initializing converter...');
+          const success = await initializeConverter();
+          setIsInitialized(success);
+          if (!success) {
+            console.error('Failed to initialize DWG converter');
+          }
+          return;
+        }
+
+        // Wait 500ms and try again
+        await new Promise(resolve => setTimeout(resolve, 500));
+        attempts++;
       }
-    });
+
+      console.error('❌ Timeout waiting for libdxfrw.js to load');
+      setIsInitialized(false);
+    };
+
+    waitForScript();
   }, []);
 
   const handleFileSelect = useCallback(async (file: File) => {
