@@ -68,10 +68,10 @@ export default function Home() {
       const { convertDWGtoDXF } = await import('@/lib/converter');
 
       // Convert DWG to DXF using real LibreDWG WASM
-      // Add timeout to prevent hanging
+      // Add timeout to prevent hanging (8 seconds to fail fast on unsupported versions)
       const conversionPromise = convertDWGtoDXF(arrayBuffer, file.name);
       const timeoutPromise = new Promise<never>((_, reject) => {
-        setTimeout(() => reject(new Error('Conversion timeout - file may be too large or complex')), 30000);
+        setTimeout(() => reject(new Error('Conversion timeout - file may be from an unsupported AutoCAD version (2019+) or too complex')), 8000);
       });
 
       const result = await Promise.race([conversionPromise, timeoutPromise]);
@@ -174,23 +174,6 @@ export default function Home() {
           onFileSelect={handleFileSelect}
           isConverting={isConverting}
         />
-
-        {/* Version Warning - Below Drop Zone */}
-        <div className="mt-6 bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-4">
-          <div className="flex items-start gap-3">
-            <svg className="w-6 h-6 text-yellow-400 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-            </svg>
-            <div className="text-left">
-              <p className="text-sm font-semibold text-yellow-300 mb-1">
-                ⚠️ AutoCAD Version Support: R14 - 2018 Only
-              </p>
-              <p className="text-xs text-yellow-200/80">
-                Files from AutoCAD 2019-2025 are not supported by the free converter. If conversion fails, try re-saving your file as "AutoCAD 2018 DWG" format.
-              </p>
-            </div>
-          </div>
-        </div>
 
         {/* Conversion Status */}
         {status === 'converting' || status === 'success' ? (
