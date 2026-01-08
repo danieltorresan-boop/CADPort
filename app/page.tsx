@@ -58,23 +58,38 @@ export default function Home() {
         throw new Error('Converter not initialized. Please refresh the page.');
       }
 
-      setProgress(10);
-
-      // Read file as ArrayBuffer
+      // Read file as ArrayBuffer FIRST (before any progress updates)
       const arrayBuffer = await file.arrayBuffer();
-      setProgress(20);
+
+      // Check DWG version from header BEFORE showing progress or calling WASM
+      const view = new Uint8Array(arrayBuffer);
+      const versionString = String.fromCharCode(...view.slice(0, 6));
+      console.log(`📋 DWG File Header: "${versionString}"`);
+
+      // Extract version code (e.g., "AC1032" -> 1032)
+      if (!versionString.startsWith('AC')) {
+        throw new Error('Invalid DWG file format. File does not appear to be a valid AutoCAD DWG file.');
+      }
+
+      const versionCode = versionString.substring(2, 6);
+      const versionNum = parseInt(versionCode, 10);
+      console.log(`📋 DWG Version Code: AC${versionCode} (${versionNum})`);
+
+      // LibreDWG supports up to AC1032 (AutoCAD 2018)
+      if (versionNum > 1032) {
+        throw new Error(`DWG file version ${versionString} is not supported. Supported versions: AutoCAD R14-2018 (AC1014-AC1032). Your file appears to be from AutoCAD 2019 or newer. Please re-save as "AutoCAD 2018 DWG" format.`);
+      }
+
+      // Now show progress since we know it's a supported file
+      setProgress(10);
 
       // Dynamically import converter to avoid SSR issues
       const { convertDWGtoDXF } = await import('@/lib/converter');
 
-      // Convert DWG to DXF using real LibreDWG WASM
-      // Add timeout to prevent hanging (8 seconds to fail fast on unsupported versions)
-      const conversionPromise = convertDWGtoDXF(arrayBuffer, file.name);
-      const timeoutPromise = new Promise<never>((_, reject) => {
-        setTimeout(() => reject(new Error('Conversion timeout - file may be from an unsupported AutoCAD version (2019+) or too complex')), 8000);
-      });
+      setProgress(20);
 
-      const result = await Promise.race([conversionPromise, timeoutPromise]);
+      // Convert DWG to DXF using real LibreDWG WASM
+      const result = await convertDWGtoDXF(arrayBuffer, file.name);
 
       setProgress(90);
 
