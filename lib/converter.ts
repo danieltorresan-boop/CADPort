@@ -63,30 +63,42 @@ export async function convertDWGtoDXF(
   }
 
   try {
+    console.log(`📥 Converting ${fileName} (${dwgFileContent.byteLength} bytes)`);
+
     // Create database and file handler
     const database = new libdxfrwModule.DRW_Database();
     const fileHandler = new libdxfrwModule.DRW_FileHandler();
     fileHandler.database = database;
 
+    console.log('📦 Created database and file handler');
+
     // Import DWG file
+    console.log('📖 Attempting to import DWG file...');
     const importSuccess = fileHandler.fileImport(dwgFileContent, database, false, false);
+
+    console.log('Import result:', importSuccess);
 
     if (!importSuccess) {
       database.delete();
       fileHandler.delete();
       return {
         success: false,
-        error: `Failed to parse ${fileName}. The file may be corrupted or in an unsupported format.`
+        error: `Failed to parse ${fileName}. The file may be corrupted or in an unsupported DWG version (supported: R14-2020).`
       };
     }
 
+    console.log('✅ DWG file imported successfully');
+
     // Export as DXF (AC1021 = AutoCAD 2007 DXF format - widely compatible)
+    console.log('📝 Exporting to DXF format...');
     const dxfContent = fileHandler.fileExport(
       libdxfrwModule.DRW_Version.AC1021,
       false, // binary = false (ASCII DXF)
       database,
       false
     );
+
+    console.log('DXF export result:', dxfContent ? `${dxfContent.length} bytes` : 'null/empty');
 
     // Clean up C++ objects
     database.delete();
@@ -107,10 +119,23 @@ export async function convertDWGtoDXF(
     };
 
   } catch (error) {
-    console.error('Error during DWG to DXF conversion:', error);
+    console.error('❌ Error during DWG to DXF conversion:', error);
+    console.error('Error type:', typeof error);
+    console.error('Error details:', JSON.stringify(error, null, 2));
+
+    // Try to get more details from the error
+    let errorMessage = 'Unknown conversion error';
+    if (error instanceof Error) {
+      errorMessage = error.message;
+    } else if (typeof error === 'number') {
+      errorMessage = `LibreDWG error code: ${error} (possible file format or version incompatibility)`;
+    } else if (typeof error === 'string') {
+      errorMessage = error;
+    }
+
     return {
       success: false,
-      error: error instanceof Error ? error.message : 'Unknown conversion error'
+      error: errorMessage
     };
   }
 }
