@@ -91,7 +91,13 @@ export async function convertDWGtoDXF(
       console.log('⏳ Starting DWG read operation...');
       console.time('DWG Read Duration');
 
+      // Suppress console.error during WASM read (LibreDWG outputs debug info to stderr)
+      const originalConsoleError = console.error;
+      console.error = () => {}; // Temporarily disable console.error
+
       readResult = dwgReader.read(fileHandler, false);
+
+      console.error = originalConsoleError; // Restore console.error
 
       console.timeEnd('DWG Read Duration');
       console.log('✅ Read operation completed. Result:', readResult);
@@ -130,12 +136,13 @@ export async function convertDWGtoDXF(
     // Clean up DWG reader
     dwgReader.delete();
 
-    if (!readResult) {
+    // Check if read failed (non-zero return code means error in LibreDWG)
+    if (readResult !== 0) {
       database.delete();
       fileHandler.delete();
       return {
         success: false,
-        error: `Failed to read ${fileName}. The file may be corrupted or in an unsupported DWG version (supported: R14-2018).`
+        error: `DWG file version not supported (error code: ${readResult}). Supported versions: AutoCAD R14-2018. Your file may be from AutoCAD 2019 or newer.`
       };
     }
 
