@@ -226,7 +226,7 @@ EOF
                   Have you tried the new Archad.pro design tool?
                 </p>
                 <p className="text-zinc-400 text-sm">
-                  AI-powered CAD application with comprehensive drawing and design capabilities
+                  Design anywhere with AI-enhanced drawings and tools
                 </p>
               </div>
             </div>
