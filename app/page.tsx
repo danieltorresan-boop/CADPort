@@ -204,19 +204,36 @@ EOF
             Built with modern web technologies and licensed under GPL-3.0, CADPort is free and open source software.
           </p>
         </div>
+
+        {/* Archad Promotion */}
+        <div className="mt-8 bg-gradient-to-r from-blue-500/10 to-purple-500/10 backdrop-blur-sm border border-blue-400/30 rounded-xl p-8 hover:border-blue-400/50 transition-all">
+          <div className="flex flex-col md:flex-row items-center justify-between gap-6">
+            <div className="flex-1 text-center md:text-left">
+              <p className="text-2xl font-semibold text-white mb-2">
+                Have you tried the new Archad.pro design tool?
+              </p>
+              <p className="text-blue-200/70 text-sm">
+                AI-powered CAD application with comprehensive drawing and design capabilities
+              </p>
+            </div>
+            <a
+              href="https://archad.pro"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="px-8 py-3 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 rounded-lg text-white font-semibold transition-all shadow-lg shadow-blue-500/30 hover:shadow-blue-500/50 hover:scale-105 whitespace-nowrap"
+            >
+              Try Archad →
+            </a>
+          </div>
+        </div>
       </main>
 
       {/* Footer */}
       <footer className="border-t border-white/10 bg-black/20 backdrop-blur-sm mt-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="flex flex-col md:flex-row justify-between items-center gap-4">
+          <div className="text-center">
             <div className="text-sm text-blue-300/70">
               © 2026 CADPort • Licensed under GPL-3.0
-            </div>
-            <div className="flex gap-6">
-              <a href="https://archad.pro" className="text-blue-300 hover:text-white text-sm transition-colors">
-                Archad CAD App
-              </a>
             </div>
           </div>
         </div>
