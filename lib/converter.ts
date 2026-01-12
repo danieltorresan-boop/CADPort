@@ -231,19 +231,124 @@ export async function convertDWGtoDXF(
 }
 
 /**
- * Convert DXF file to DWG format (future enhancement)
+ * Convert DXF file to DWG format (AutoCAD 2018 format)
  * @param dxfFileContent - String containing the DXF file data
  * @param fileName - Original file name
- * @returns ConversionResult with DWG content or error
+ * @returns ConversionResult with DWG content (ArrayBuffer) or error
  */
 export async function convertDXFtoDWG(
   dxfFileContent: string,
   fileName: string
-): Promise<ConversionResult> {
-  // TODO: Implement DXF to DWG conversion
-  // This is more complex and may require additional libraries
-  return {
-    success: false,
-    error: 'DXF to DWG conversion is not yet implemented'
-  };
+): Promise<{ success: boolean; dwgContent?: ArrayBuffer; error?: string }> {
+  // Ensure module is initialized
+  if (!libdxfrwModule) {
+    const initialized = await initializeConverter();
+    if (!initialized) {
+      return {
+        success: false,
+        error: 'Failed to initialize conversion module'
+      };
+    }
+  }
+
+  try {
+    console.log(`📥 Converting ${fileName} (${dxfFileContent.length} bytes) to DWG`);
+
+    // Create database and file handler
+    const database = new libdxfrwModule.DRW_Database();
+    const fileHandler = new libdxfrwModule.DRW_FileHandler();
+    fileHandler.database = database;
+
+    console.log('📦 Created database and file handler');
+
+    // Try to import DXF - LibreDWG might use fileImport method instead of a reader class
+    console.log('📖 Attempting to import DXF file...');
+
+    let importResult;
+    try {
+      console.log('⏳ Starting DXF import operation...');
+      console.time('DXF Import Duration');
+
+      // Try using fileImport method which might support both DWG and DXF
+      // DRW_Version.UNKNOWNCODE might auto-detect, or we use AC1021 for DXF
+      importResult = fileHandler.fileImport(
+        libdxfrwModule.DRW_Version.AC1021, // DXF format identifier
+        dxfFileContent,
+        database
+      );
+
+      console.timeEnd('DXF Import Duration');
+      console.log('✅ Import operation completed. Result:', importResult);
+
+    } catch (importError) {
+      console.error('❌ Error during DXF import operation:', importError);
+      console.timeEnd('DXF Import Duration');
+
+      database.delete();
+      fileHandler.delete();
+
+      return {
+        success: false,
+        error: `DXF to DWG conversion is not supported by this LibreDWG build. The WASM module only supports DWG → DXF conversion. To export as DWG, please use the Archad application which includes DXF → DWG export via API.`
+      };
+    }
+
+    // Check if import failed
+    if (importResult !== 0 && importResult !== true) {
+      database.delete();
+      fileHandler.delete();
+      return {
+        success: false,
+        error: `DXF to DWG conversion is not supported by this LibreDWG build. Only DWG → DXF conversion is available.`
+      };
+    }
+
+    console.log('✅ DXF file imported successfully');
+
+    // Export as DWG (AC1032 = AutoCAD 2018 DWG format)
+    console.log('📝 Exporting to DWG format (AutoCAD 2018)...');
+    const dwgContent = fileHandler.fileExport(
+      libdxfrwModule.DRW_Version.AC1032, // AutoCAD 2018 DWG format
+      true, // binary = true (DWG is a binary format)
+      database,
+      false
+    );
+
+    console.log('DWG export result:', dwgContent ? `${dwgContent.byteLength} bytes` : 'null/empty');
+
+    // Clean up C++ objects
+    database.delete();
+    fileHandler.delete();
+
+    if (!dwgContent || dwgContent.byteLength === 0) {
+      return {
+        success: false,
+        error: 'Conversion produced empty DWG file'
+      };
+    }
+
+    console.log(`✅ Successfully converted ${fileName} to DWG (${dwgContent.byteLength} bytes)`);
+
+    return {
+      success: true,
+      dwgContent
+    };
+
+  } catch (error) {
+    console.error('❌ Error during DXF to DWG conversion:', error);
+
+    let errorMessage = 'DXF to DWG conversion is not supported by this LibreDWG build. Only DWG → DXF conversion is available in the browser version.';
+    if (error instanceof Error && error.message.includes('not a constructor')) {
+      errorMessage = 'DXF to DWG conversion is not supported by this LibreDWG build. Only DWG → DXF conversion is available in the browser version.';
+    } else if (error instanceof Error) {
+      errorMessage = error.message;
+    } else if (typeof error === 'string') {
+      errorMessage = error;
+    }
+
+    return {
+      success: false,
+      error: errorMessage
+    };
+  }
 }

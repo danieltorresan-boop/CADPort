@@ -4,7 +4,10 @@ import { useState, useCallback, useEffect } from 'react';
 import FileUploader from '@/components/FileUploader';
 import ConversionStatus from '@/components/ConversionStatus';
 
+type ConversionMode = 'dwg-to-dxf' | 'dxf-to-dwg';
+
 export default function Home() {
+  const [conversionMode, setConversionMode] = useState<ConversionMode>('dwg-to-dxf');
   const [isConverting, setIsConverting] = useState(false);
   const [progress, setProgress] = useState(0);
   const [status, setStatus] = useState<'idle' | 'converting' | 'success' | 'error'>('idle');
@@ -60,50 +63,85 @@ export default function Home() {
         throw new Error('Converter not initialized. Please refresh the page.');
       }
 
-      // Read file as ArrayBuffer FIRST (before any progress updates)
-      const arrayBuffer = await file.arrayBuffer();
+      if (conversionMode === 'dwg-to-dxf') {
+        // DWG → DXF Conversion
+        const arrayBuffer = await file.arrayBuffer();
 
-      // Check DWG version from header BEFORE showing progress or calling WASM
-      const view = new Uint8Array(arrayBuffer);
-      const versionString = String.fromCharCode(...view.slice(0, 6));
-      console.log(`📋 DWG File Header: "${versionString}"`);
+        // Check DWG version from header
+        const view = new Uint8Array(arrayBuffer);
+        const versionString = String.fromCharCode(...view.slice(0, 6));
+        console.log(`📋 DWG File Header: "${versionString}"`);
 
-      // Extract version code (e.g., "AC1032" -> 1032)
-      if (!versionString.startsWith('AC')) {
-        throw new Error('Invalid DWG file format. File does not appear to be a valid AutoCAD DWG file.');
+        // Extract version code (e.g., "AC1032" -> 1032)
+        if (!versionString.startsWith('AC')) {
+          throw new Error('Invalid DWG file format. File does not appear to be a valid AutoCAD DWG file.');
+        }
+
+        const versionCode = versionString.substring(2, 6);
+        const versionNum = parseInt(versionCode, 10);
+        console.log(`📋 DWG Version Code: AC${versionCode} (${versionNum})`);
+
+        // LibreDWG supports up to AC1032 (AutoCAD 2018)
+        if (versionNum > 1032) {
+          throw new Error(`DWG file version ${versionString} is not supported. Supported versions: AutoCAD R14-2018 (AC1014-AC1032). Your file appears to be from AutoCAD 2019 or newer. Please re-save as "AutoCAD 2018 DWG" format.`);
+        }
+
+        setProgress(10);
+
+        // Dynamically import converter
+        const { convertDWGtoDXF } = await import('@/lib/converter');
+
+        setProgress(20);
+
+        // Convert DWG to DXF
+        const result = await convertDWGtoDXF(arrayBuffer, file.name);
+
+        setProgress(90);
+
+        if (!result.success || !result.dxfContent) {
+          throw new Error(result.error || 'Conversion failed');
+        }
+
+        // Download the converted DXF file
+        downloadDXF(result.dxfContent, file.name);
+
+        setProgress(100);
+        setStatus('success');
+
+      } else {
+        // DXF → DWG Conversion (via API)
+        setProgress(10);
+
+        // Create FormData to send DXF file to API
+        const formData = new FormData();
+        formData.append('file', file);
+
+        setProgress(20);
+
+        // Call CADPort API endpoint
+        const response = await fetch('/api/convert-to-dwg', {
+          method: 'POST',
+          body: formData,
+        });
+
+        setProgress(70);
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.error || 'Conversion failed');
+        }
+
+        // Get DWG file as blob
+        const dwgBlob = await response.blob();
+
+        setProgress(90);
+
+        // Download the converted DWG file
+        downloadDWG(dwgBlob, file.name);
+
+        setProgress(100);
+        setStatus('success');
       }
-
-      const versionCode = versionString.substring(2, 6);
-      const versionNum = parseInt(versionCode, 10);
-      console.log(`📋 DWG Version Code: AC${versionCode} (${versionNum})`);
-
-      // LibreDWG supports up to AC1032 (AutoCAD 2018)
-      if (versionNum > 1032) {
-        throw new Error(`DWG file version ${versionString} is not supported. Supported versions: AutoCAD R14-2018 (AC1014-AC1032). Your file appears to be from AutoCAD 2019 or newer. Please re-save as "AutoCAD 2018 DWG" format.`);
-      }
-
-      // Now show progress since we know it's a supported file
-      setProgress(10);
-
-      // Dynamically import converter to avoid SSR issues
-      const { convertDWGtoDXF } = await import('@/lib/converter');
-
-      setProgress(20);
-
-      // Convert DWG to DXF using real LibreDWG WASM
-      const result = await convertDWGtoDXF(arrayBuffer, file.name);
-
-      setProgress(90);
-
-      if (!result.success || !result.dxfContent) {
-        throw new Error(result.error || 'Conversion failed');
-      }
-
-      // Download the converted DXF file
-      downloadDXF(result.dxfContent, file.name);
-
-      setProgress(100);
-      setStatus('success');
 
     } catch (error) {
       hasError = true;
@@ -121,7 +159,7 @@ export default function Home() {
       }
       // Error state persists until user drops another file
     }
-  }, [isInitialized]);
+  }, [isInitialized, conversionMode]);
 
   const downloadDXF = (content: string, originalFileName: string) => {
     const dxfFileName = originalFileName.replace(/\.[^/.]+$/, '') + '.dxf';
@@ -130,6 +168,18 @@ export default function Home() {
     const a = document.createElement('a');
     a.href = url;
     a.download = dxfFileName;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
+  const downloadDWG = (blob: Blob, originalFileName: string) => {
+    const dwgFileName = originalFileName.replace(/\.[^/.]+$/, '') + '.dwg';
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = dwgFileName;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -160,17 +210,64 @@ export default function Home() {
       {/* Main Content */}
       <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         {/* Hero Section */}
-        <div className="text-center mb-12">
+        <div className="text-center mb-8">
           <h2 className="text-4xl md:text-5xl font-bold text-white mb-4">
-            Convert DWG Files to DXF
+            {conversionMode === 'dwg-to-dxf' ? 'Convert DWG Files to DXF' : 'Convert DXF Files to DWG'}
           </h2>
           <p className="text-xl text-blue-200 mb-2">
             100% Free • Secure • Private
           </p>
           <p className="text-sm text-blue-300/70">
-            All processing happens in your browser. Your files never leave your device.
+            {conversionMode === 'dwg-to-dxf'
+              ? 'All processing happens in your browser. Your files never leave your device.'
+              : 'Processing happens on the server. Files are deleted immediately after conversion.'}
           </p>
         </div>
+
+        {/* Mode Toggle */}
+        <div className="flex justify-center mb-8">
+          <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-1 inline-flex">
+            <button
+              onClick={() => setConversionMode('dwg-to-dxf')}
+              className={`px-6 py-3 rounded-lg font-medium transition-all ${
+                conversionMode === 'dwg-to-dxf'
+                  ? 'bg-blue-500 text-white shadow-lg'
+                  : 'text-blue-200 hover:text-white'
+              }`}
+            >
+              DWG → DXF
+            </button>
+            <button
+              onClick={() => setConversionMode('dxf-to-dwg')}
+              className={`px-6 py-3 rounded-lg font-medium transition-all ${
+                conversionMode === 'dxf-to-dwg'
+                  ? 'bg-blue-500 text-white shadow-lg'
+                  : 'text-blue-200 hover:text-white'
+              }`}
+            >
+              DXF → DWG
+            </button>
+          </div>
+        </div>
+
+        {/* Format Info */}
+        {conversionMode === 'dxf-to-dwg' && (
+          <div className="mb-6 bg-blue-500/10 border border-blue-500/30 rounded-lg p-4">
+            <div className="flex items-start gap-3">
+              <svg className="w-6 h-6 text-blue-400 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <div className="text-left flex-1">
+                <p className="text-sm font-semibold text-blue-300 mb-1">
+                  Output Format
+                </p>
+                <p className="text-sm text-blue-200/90">
+                  DXF files will be converted to <strong>AutoCAD 2000 DWG format (R2000)</strong> using LibreDWG. This format is compatible with all modern CAD software.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Error Message - Above Drop Zone */}
         {status === 'error' && (
@@ -195,6 +292,7 @@ export default function Home() {
         <FileUploader
           onFileSelect={handleFileSelect}
           isConverting={isConverting}
+          conversionMode={conversionMode}
         />
 
         {/* Conversion Status */}

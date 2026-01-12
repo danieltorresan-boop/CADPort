@@ -5,10 +5,14 @@ import { useCallback, useState } from 'react';
 interface FileUploaderProps {
   onFileSelect: (file: File) => void;
   isConverting: boolean;
+  conversionMode: 'dwg-to-dxf' | 'dxf-to-dwg';
 }
 
-export default function FileUploader({ onFileSelect, isConverting }: FileUploaderProps) {
+export default function FileUploader({ onFileSelect, isConverting, conversionMode }: FileUploaderProps) {
   const [isDragging, setIsDragging] = useState(false);
+
+  const acceptedExtension = conversionMode === 'dwg-to-dxf' ? '.dwg' : '.dxf';
+  const acceptedFileType = conversionMode === 'dwg-to-dxf' ? 'DWG' : 'DXF';
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -25,14 +29,19 @@ export default function FileUploader({ onFileSelect, isConverting }: FileUploade
     setIsDragging(false);
 
     const files = Array.from(e.dataTransfer.files);
-    const dwgFile = files.find(file => file.name.toLowerCase().endsWith('.dwg'));
+    const acceptedFile = files.find(file => {
+      const fileName = file.name.toLowerCase();
+      return conversionMode === 'dwg-to-dxf'
+        ? fileName.endsWith('.dwg')
+        : fileName.endsWith('.dxf');
+    });
 
-    if (dwgFile) {
-      onFileSelect(dwgFile);
+    if (acceptedFile) {
+      onFileSelect(acceptedFile);
     } else {
-      alert('Please drop a DWG file');
+      alert(`Please drop a ${acceptedFileType} file`);
     }
-  }, [onFileSelect]);
+  }, [onFileSelect, conversionMode, acceptedFileType]);
 
   const handleFileInput = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -66,7 +75,7 @@ export default function FileUploader({ onFileSelect, isConverting }: FileUploade
         {/* Text */}
         <div>
           <p className="text-xl font-semibold text-white mb-2">
-            Drop your DWG file here
+            Drop your {acceptedFileType} file here
           </p>
           <p className="text-sm text-blue-200/70 mb-4">
             or click to browse
@@ -77,7 +86,7 @@ export default function FileUploader({ onFileSelect, isConverting }: FileUploade
         <label className="cursor-pointer">
           <input
             type="file"
-            accept=".dwg"
+            accept={acceptedExtension}
             onChange={handleFileInput}
             className="hidden"
             disabled={isConverting}
@@ -90,11 +99,18 @@ export default function FileUploader({ onFileSelect, isConverting }: FileUploade
         {/* Supported Formats */}
         <div className="mt-4 px-4 py-2 bg-white/5 rounded-lg border border-white/10">
           <p className="text-xs text-blue-300/70">
-            Supports: <span className="text-blue-300 font-medium">.dwg</span> files
+            Supports: <span className="text-blue-300 font-medium">{acceptedFileType}</span> files
           </p>
-          <p className="text-xs text-yellow-300/60 mt-1">
-            AutoCAD R14-2018 only
-          </p>
+          {conversionMode === 'dwg-to-dxf' && (
+            <p className="text-xs text-yellow-300/60 mt-1">
+              AutoCAD R14-2018 only
+            </p>
+          )}
+          {conversionMode === 'dxf-to-dwg' && (
+            <p className="text-xs text-green-300/60 mt-1">
+              Output: AutoCAD 2000 DWG
+            </p>
+          )}
         </div>
       </div>
     </div>

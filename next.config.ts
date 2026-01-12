@@ -1,9 +1,10 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  output: 'export', // Static export for Vercel
+  // NOTE: API routes require server runtime, not static export
+  // output: 'export', // Commented out to enable API routes
   images: {
-    unoptimized: true, // Required for static export
+    unoptimized: true,
   },
   webpack: (config, { isServer }) => {
     // Exclude WebAssembly files from server-side bundle
